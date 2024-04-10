@@ -18,20 +18,6 @@
     <div id="resultPanel"></div>
 
 <script>
-        function prepareDictionary(dictionary) {
-            var newDictionary = {};
-            for (var key in dictionary) {
-                newDictionary[key] = [];
-                dictionary[key].forEach(function(phrase) {
-                    phrase.split(' ').forEach(function(word) {
-                        var normalizedWord = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                        newDictionary[key].push(normalizedWord);
-                    });
-                });
-            }
-            return newDictionary;
-        }
-
     var OriginalCharadaWords = {
         "1": ["Caballo", "Sol", "Tintero", "Camello", "Pescado chico"],
         "2": ["Mariposa", "Hombre", "Cafetera", "Caracol"],
@@ -135,7 +121,29 @@
         "100": ["Inodoro", "Dios", "Escoba", "Automóvil"]
     };
 
-    var CharaWords = prepareDictionary(OriginalCharadaWords);
+    function prepareDictionary(dictionary) {
+        var newDictionary = {};
+        for (var key in dictionary) {
+            var intKey = parseInt(key);
+            var targetKey = intKey > 50 ? intKey - 50 : intKey;
+
+            if (!newDictionary[targetKey]) {
+                newDictionary[targetKey] = [];
+            }
+
+            dictionary[key].forEach(function(phrase) {
+                phrase.split(' ').forEach(function(word) {
+                    var normalizedWord = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                    if (!newDictionary[targetKey].includes(normalizedWord)) {
+                        newDictionary[targetKey].push(normalizedWord);
+                    }
+                });
+            });
+        }
+        return newDictionary;
+    }
+    
+    var WorkingCharaWords = prepareDictionary(OriginalCharadaWords);
 
     function generate() {
             var input = document.getElementById('inputText').value.toUpperCase();
@@ -143,8 +151,8 @@
             var wordArray = normalizedInput.split(/[\s,]+/);
             var wordCount = {};
 
-            for (var key in CharaWords) {
-                CharaWords[key].forEach(function(word) {
+            for (var key in WorkingCharaWords) {
+                WorkingCharaWords[key].forEach(function(word) {
                     if (wordArray.includes(word)) {
                         if (wordCount[key]) {
                             wordCount[key]++;
@@ -167,8 +175,11 @@
             resultPanel.innerHTML = ''; // Clear previous results
             topKeys.forEach(function(key) {
                 var div = document.createElement('div');
-                var words = OriginalCharadaWords[key.toString()];
-                div.innerHTML = `${key > 50 ? key - 50 : key}: ${words.join(', ')}`;
+                var originalKey = parseInt(key);
+                var lowKeyWords = OriginalCharadaWords[originalKey.toString()] || [];
+                var highKey = originalKey + 50;
+                var highKeyWords = OriginalCharadaWords[highKey.toString()] || [];
+                div.innerHTML = `<strong>Lotto Max: ${originalKey}</strong> - <span>(Charada ${originalKey}: ${lowKeyWords.join(', ')} and ${highKey}: ${highKeyWords.join(', ')})</span>`;
                 resultPanel.appendChild(div);
             });
         }
