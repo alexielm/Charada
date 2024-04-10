@@ -9,7 +9,7 @@
 	<h1>Conversor de Charada Cubana a Lotto Max</h1>
     </div>
     <div>
-        <textarea id="inputText" style="width: 99%" placeholder="Pon aqui tu historia" rows="10"></textarea>
+        <textarea id="inputText" style="width: 99%" placeholder="Pon aqui tu historia" rows="50"></textarea>
     </div>
     <div>
         <button onclick="generate()">Convertir</button>
@@ -18,20 +18,21 @@
     <div id="resultPanel"></div>
 
 <script>
-    function prepareDictionary(dictionary) {
-        var newDictionary = {};
-        for (var key in dictionary) {
-            newDictionary[key] = [];
-            dictionary[key].forEach(function(phrase) {
-                phrase.split(' ').forEach(function(word) {
-                    newDictionary[key].push(word.toUpperCase());
+        function prepareDictionary(dictionary) {
+            var newDictionary = {};
+            for (var key in dictionary) {
+                newDictionary[key] = [];
+                dictionary[key].forEach(function(phrase) {
+                    phrase.split(' ').forEach(function(word) {
+                        var normalizedWord = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                        newDictionary[key].push(normalizedWord);
+                    });
                 });
-            });
+            }
+            return newDictionary;
         }
-        return newDictionary;
-    }
 
-    var CharaWords = prepareDictionary({
+    var OriginalCharadaWords = {
         "1": ["Caballo", "Sol", "Tintero", "Camello", "Pescado chico"],
         "2": ["Mariposa", "Hombre", "Cafetera", "Caracol"],
         "3": ["Marinero", "Luna", "Taza", "Ciempiés", "Muerto"],
@@ -132,36 +133,45 @@
         "98": ["Piano", "Entierro Grande", "Traición", "Visita Regia", "Fonógrafo"],
         "99": ["Serrucho", "Gallo Grande", "Temporal muy Grande", "Carbonero", "Lluvia"],
         "100": ["Inodoro", "Dios", "Escoba", "Automóvil"]
-    });
+    };
+
+    var CharaWords = prepareDictionary(OriginalCharadaWords);
 
     function generate() {
-        var input = document.getElementById('inputText').value.toUpperCase();
-        var wordArray = input.split(/[\s,]+/);
-        var wordCount = {};
+            var input = document.getElementById('inputText').value.toUpperCase();
+            var normalizedInput = input.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            var wordArray = normalizedInput.split(/[\s,]+/);
+            var wordCount = {};
 
-        for (var key in CharaWords) {
-            CharaWords[key].forEach(function(word) {
-                if (wordArray.includes(word)) {
-                    if (wordCount[key]) {
-                        wordCount[key]++;
-                    } else {
-                        wordCount[key] = 1;
+            for (var key in CharaWords) {
+                CharaWords[key].forEach(function(word) {
+                    if (wordArray.includes(word)) {
+                        if (wordCount[key]) {
+                            wordCount[key]++;
+                        } else {
+                            wordCount[key] = 1;
+                        }
                     }
-                }
+                });
+            }
+
+            var sortedKeys = Object.keys(wordCount).sort(function(a, b) {
+                return wordCount[b] - wordCount[a];
+            });
+
+            var topKeys = sortedKeys.slice(0, 7).map(function(key) {
+                return parseInt(key) > 50 ? parseInt(key) - 50 : parseInt(key);
+            });
+
+            var resultPanel = document.getElementById('resultPanel');
+            resultPanel.innerHTML = ''; // Clear previous results
+            topKeys.forEach(function(key) {
+                var div = document.createElement('div');
+                var words = OriginalCharadaWords[key.toString()];
+                div.innerHTML = `${key > 50 ? key - 50 : key}: ${words.join(', ')}`;
+                resultPanel.appendChild(div);
             });
         }
-
-        var sortedKeys = Object.keys(wordCount).sort(function(a, b) {
-            return wordCount[b] - wordCount[a];
-        });
-
-        var topKeys = sortedKeys.slice(0, 7).map(function(key) {
-            return parseInt(key) > 50 ? parseInt(key) - 50 : parseInt(key);
-        });
-
-        var resultPanel = document.getElementById('resultPanel');
-        resultPanel.innerHTML = topKeys.join(', ');
-    }
 </script>
 </body>
 </html>
