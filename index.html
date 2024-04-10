@@ -146,43 +146,63 @@
     var WorkingCharaWords = prepareDictionary(OriginalCharadaWords);
 
     function generate() {
-            var input = document.getElementById('inputText').value.toUpperCase();
-            var normalizedInput = input.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            var wordArray = normalizedInput.split(/[\s,]+/);
-            var wordCount = {};
+    var input = document.getElementById('inputText').value.toUpperCase();
+    var normalizedInput = input.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    var wordArray = normalizedInput.split(/[\s,]+/);
+    var wordCount = {};
+    var foundWords = {};
 
-            for (var key in WorkingCharaWords) {
-                WorkingCharaWords[key].forEach(function(word) {
-                    if (wordArray.includes(word)) {
-                        if (wordCount[key]) {
-                            wordCount[key]++;
-                        } else {
-                            wordCount[key] = 1;
-                        }
-                    }
-                });
+    for (var key in WorkingCharaWords) {
+        WorkingCharaWords[key].forEach(function(word) {
+            if (wordArray.includes(word)) {
+                if (!foundWords[key]) {
+                    foundWords[key] = [];
+                }
+                foundWords[key].push(word);
+                if (wordCount[key]) {
+                    wordCount[key]++;
+                } else {
+                    wordCount[key] = 1;
+                }
             }
+        });
+    }
 
-            var sortedKeys = Object.keys(wordCount).sort(function(a, b) {
-                return wordCount[b] - wordCount[a];
-            });
+    console.log(wordCount);
+    console.log(foundWords);
 
-            var topKeys = sortedKeys.slice(0, 7).map(function(key) {
-                return parseInt(key) > 50 ? parseInt(key) - 50 : parseInt(key);
-            });
+    var sortedKeys = Object.keys(wordCount).sort(function(a, b) {
+        return wordCount[b] - wordCount[a];
+    });
 
-            var resultPanel = document.getElementById('resultPanel');
-            resultPanel.innerHTML = ''; // Clear previous results
-            topKeys.forEach(function(key) {
-                var div = document.createElement('div');
-                var originalKey = parseInt(key);
-                var lowKeyWords = OriginalCharadaWords[originalKey.toString()] || [];
-                var highKey = originalKey + 50;
-                var highKeyWords = OriginalCharadaWords[highKey.toString()] || [];
-                div.innerHTML = `<strong>Lotto Max: ${originalKey}</strong> - <span>(Charada ${originalKey}: ${lowKeyWords.join(', ')} and ${highKey}: ${highKeyWords.join(', ')})</span>`;
-                resultPanel.appendChild(div);
-            });
-        }
+    var topKeys = sortedKeys.slice(0, 7).map(function(key) {
+        return parseInt(key) > 50 ? parseInt(key) - 50 : parseInt(key);
+    });
+
+    console.log(topKeys);
+
+    var resultPanel = document.getElementById('resultPanel');
+    resultPanel.innerHTML = ''; // Clear previous results
+    topKeys.forEach(function(key) {
+        var div = document.createElement('div');
+        var originalKey = parseInt(key);
+        var lowKeyWords = OriginalCharadaWords[originalKey.toString()] || [];
+        var highKey = originalKey + 50;
+        var highKeyWords = OriginalCharadaWords[highKey.toString()] || [];
+
+        var wordsList = lowKeyWords.concat(highKeyWords).map(function(word) {
+            var normalizedWord = word.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (foundWords[originalKey] && foundWords[originalKey].includes(normalizedWord)) {
+                return `<strong>${word}</strong>`;
+            }
+            return word;
+        });
+
+        div.innerHTML = `<strong>Lotto Max: ${originalKey}</strong> - <span>(Charada ${originalKey} & ${highKey}: ${wordsList.join(', ')})</span>`;
+        resultPanel.appendChild(div);
+    });
+}
+
 </script>
 </body>
 </html>
