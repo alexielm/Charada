@@ -3,13 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <title>Conversor de Charada Cubana a Lotto Max</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+    
+        h1 {
+            color: #333;
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+    
+        button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+    
+        button:hover {
+            background-color: #0056b3;
+        }
+    
+        .matchingWord {
+            background-color: #ffff00;
+        }
+    
+        .lottoNumber {
+            font-weight: bold;
+            color: #d35400;
+        }
+    
+        #resultPanel {
+            margin-top: 20px;
+        }
+    
+        #resultPanel div {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    
+        textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    </style>
 </head>
 <body>
     <div>
 	<h1>Conversor de Charada Cubana a Lotto Max</h1>
     </div>
     <div>
-        <textarea id="inputText" style="width: 99%" placeholder="Pon aqui tu historia" rows="50"></textarea>
+        <textarea id="inputText" style="width: 99%" placeholder="Pon aqui tu historia" rows="40"></textarea>
     </div>
     <div>
         <button onclick="generate()">Convertir</button>
@@ -168,37 +225,45 @@
         });
     }
 
-    console.log(wordCount);
-    console.log(foundWords);
+    const seed = input.length;
+    let lcg = (function() {
+        let state = seed;
+        return function() {
+            state = (1103515245 * state + 12345) % 2147483648;
+            return state / 2147483648;
+        };
+    })();
 
     var sortedKeys = Object.keys(wordCount).sort(function(a, b) {
-        return wordCount[b] - wordCount[a];
+        var countDifference = wordCount[b] - wordCount[a];
+        if (countDifference === 0) {
+            return lcg() - 0.5;  
+        }
+        return countDifference;
     });
-
-    var topKeys = sortedKeys.slice(0, 7).map(function(key) {
-        return parseInt(key) > 50 ? parseInt(key) - 50 : parseInt(key);
-    });
-
-    console.log(topKeys);
+    
+    var topKeys = sortedKeys.slice(0, 7);
 
     var resultPanel = document.getElementById('resultPanel');
-    resultPanel.innerHTML = ''; // Clear previous results
+    resultPanel.innerHTML = ''; 
+
     topKeys.forEach(function(key) {
         var div = document.createElement('div');
         var originalKey = parseInt(key);
-        var lowKeyWords = OriginalCharadaWords[originalKey.toString()] || [];
         var highKey = originalKey + 50;
-        var highKeyWords = OriginalCharadaWords[highKey.toString()] || [];
+        var allWords = OriginalCharadaWords[originalKey.toString()].concat(OriginalCharadaWords[highKey.toString()]);
+        var allWordsString = allWords.join(', ');
 
-        var wordsList = lowKeyWords.concat(highKeyWords).map(function(word) {
-            var normalizedWord = word.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            if (foundWords[originalKey] && foundWords[originalKey].includes(normalizedWord)) {
-                return `<strong>${word}</strong>`;
-            }
-            return word;
-        });
+        if (foundWords[originalKey]) {
+            foundWords[originalKey].forEach(function(foundWord) {
+                var regex = new RegExp(foundWord, 'gi');
+                allWordsString = allWordsString.replace(regex, function(match) {
+                    return `<span class="matchingWord">${match}</span>`;
+                });
+            });
+        }
 
-        div.innerHTML = `<strong>Lotto Max: ${originalKey}</strong> - <span>(Charada ${originalKey} & ${highKey}: ${wordsList.join(', ')})</span>`;
+        div.innerHTML = `<span class="lottoNumber">Lotto Max: ${originalKey}</span> - <span>(Charada ${originalKey} & ${highKey}: ${allWordsString})</span>`;
         resultPanel.appendChild(div);
     });
 }
